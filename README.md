@@ -20,8 +20,9 @@ Upload File → Clean Data → Detect Anomalies → Rank SKUs → Forecast → A
 - **Statistical anomaly detection** — per-SKU rolling z-score flags genuine spikes/drops.
 - **Top mover & decliner ranking** — period-over-period revenue comparison per SKU.
 - **Revenue forecasting** — linear-trend/moving-average forecast for next period.
-- **AI-written executive summary** — a real call to the Claude API (server-side, your own key)
-  turns the aggregated results into a 4-6 sentence narrative plus concrete recommendations.
+- **AI-written executive summary** — a server-side call turns the aggregated results into a
+  4-6 sentence narrative plus concrete recommendations. Provider auto-switches by environment:
+  Claude locally, Groq on the deployed/public site (see **AI Narrative Provider** below).
 - **Interactive dashboard** — 6 KPI cards, 5 charts (Recharts), filterable/sortable SKU table,
   anomaly log, and a live functional filter sidebar (date range, marketplace, category, brand,
   country, SKU search).
@@ -37,7 +38,8 @@ Upload File → Clean Data → Detect Anomalies → Rank SKUs → Forecast → A
 ## Tech Stack
 
 Next.js 14 (App Router) · TypeScript · Tailwind CSS v4 · Recharts · papaparse · SheetJS (xlsx)
-· jsPDF + jspdf-autotable · html2canvas · Claude API (Anthropic)
+· jsPDF + jspdf-autotable · html2canvas · Claude API (Anthropic, local dev) · Groq API
+(deployed)
 
 No database is required for the MVP — all processing happens client-side in the browser, and
 report history is kept in `localStorage`. This keeps setup to "install and run" with nothing
@@ -48,7 +50,7 @@ to provision. See **Roadmap** below for how to add Supabase for multi-user persi
 ```bash
 npm install
 cp .env.example .env.local
-# then add your Anthropic API key to .env.local
+# then add your Anthropic (Claude) API key to .env.local
 npm run dev
 ```
 
@@ -57,18 +59,45 @@ Open [http://localhost:3000](http://localhost:3000) — it redirects straight to
 Click **"Load sample dataset"** to try the full pipeline immediately without any file of your
 own.
 
+### AI Narrative Provider
+
+`/api/narrative` auto-detects which provider to call — nothing to switch by hand:
+
+- **Local (`npm run dev`)** → calls **Claude**, using `ANTHROPIC_API_KEY` from `.env.local`.
+- **Deployed on Vercel** (Vercel sets `VERCEL=1` automatically) → calls **Groq** instead, using
+  `GROQ_API_KEY`. This keeps the Claude key entirely off the public deployment.
+- The deployed/Groq path is capped at **one AI summary per visitor** via a simple cookie
+  (`mp_demo_used`), so the public demo can't run up API costs — clearing cookies or an
+  incognito window resets it, which is an accepted tradeoff for a portfolio demo. Nothing else
+  in the app (dashboard, charts, exports) is limited.
+- `NARRATIVE_PROVIDER=claude` or `NARRATIVE_PROVIDER=groq` can force a specific provider if you
+  ever need to override the auto-detection.
+
+> Note: **Groq** (`console.groq.com`, fast open-model inference) and **xAI's Grok**
+> (`console.x.ai`) are two different companies with easily-confused names — this project uses
+> Groq.
+
 ### Environment Variables
 
 | Variable | Required | Description |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | For AI narratives | Server-side only — used by `/api/narrative`. Get one at [console.anthropic.com](https://console.anthropic.com/settings/keys). Without it, the rest of the pipeline still works; the AI summary card just explains it's not configured. |
-| `CLAUDE_NARRATIVE_MODEL` | No | Overrides the model used for the executive narrative. Defaults to `claude-sonnet-5`. |
+| `ANTHROPIC_API_KEY` | Local dev only | Server-side only — used by `/api/narrative` when running locally. Get one at [console.anthropic.com](https://console.anthropic.com/settings/keys). Never add this in Vercel. |
+| `CLAUDE_NARRATIVE_MODEL` | No | Overrides the Claude model used locally. Defaults to `claude-sonnet-5`. |
+| `GROQ_API_KEY` | Deployed (Vercel) only | Server-side only — used by `/api/narrative` on the deployed site. Get one at [console.groq.com](https://console.groq.com/). Not needed locally. |
+| `GROQ_MODEL` | No | Overrides the Groq model used when deployed. Defaults to `llama-3.3-70b-versatile`. |
+| `NARRATIVE_PROVIDER` | No | Forces `"claude"` or `"groq"` instead of auto-detecting. Leave unset for normal use. |
+
+Without the relevant key configured, the rest of the pipeline still works — the AI summary
+card just explains it's not configured (or, on the deployed site, that the one-per-visitor
+demo limit was reached).
 
 ## Deploying for Free
 
 1. Push this project to a GitHub repo.
 2. Import it into [Vercel](https://vercel.com/new) (free tier is plenty for a demo).
-3. Add the `ANTHROPIC_API_KEY` environment variable in the Vercel project settings.
+3. Add the `GROQ_API_KEY` environment variable in the Vercel project settings, scoped to
+   Production. **Do not** add `ANTHROPIC_API_KEY` in Vercel — it should only ever exist in your
+   local `.env.local`, keeping it off the public deployment entirely.
 4. Deploy — you'll get a live URL you can share or demo directly in an interview.
 
 ## Project Structure
@@ -79,7 +108,7 @@ marketplace-pulse/
 │   ├── upload/page.tsx          # Upload, column mapping, sample data, pipeline trigger
 │   ├── dashboard/page.tsx       # KPIs, AI summary, charts, filters, tables, export
 │   ├── reports/page.tsx         # Report history
-│   ├── api/narrative/route.ts   # Server-side Claude API call
+│   ├── api/narrative/route.ts   # Server-side AI call — Claude locally, Groq when deployed
 │   └── layout.tsx               # Fonts, design tokens, nav shell
 ├── components/
 │   ├── charts/                  # RevenueTrend, CategoryShare, TopDeclining, Forecast, MarketplaceComparison
@@ -94,7 +123,7 @@ marketplace-pulse/
 │   ├── performance.ts     # Top/declining SKU ranking
 │   ├── forecasting.ts     # Linear-trend forecasting
 │   ├── kpis.ts / filters.ts
-│   ├── claude.ts          # Client-side call to /api/narrative
+│   ├── claude.ts          # Client-side call to /api/narrative (provider-agnostic)
 │   ├── exportExcel.ts / exportPdf.ts / captureChart.ts
 │   ├── sampleData.ts      # Realistic demo dataset generator
 │   ├── store.tsx          # React context orchestrating the full pipeline
