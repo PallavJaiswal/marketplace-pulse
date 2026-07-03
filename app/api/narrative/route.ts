@@ -2,18 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Server-only — API keys never reach the browser.
 //
-// Locally (npm run dev) this calls Claude. On Vercel it calls Grok instead —
+// Locally (npm run dev) this calls Claude. On Vercel it calls Groq instead —
 // Vercel automatically sets the VERCEL env var at build/runtime, so the
 // switch is automatic and needs no manual toggle. NARRATIVE_PROVIDER can
 // force a specific provider if you ever need to override that.
+//
+// Note: Groq (api.groq.com, fast open-model inference) is a different
+// company from xAI's Grok (api.x.ai) — easy to mix up, don't swap these.
 const isDeployed = process.env.VERCEL === "1";
-const PROVIDER = process.env.NARRATIVE_PROVIDER || (isDeployed ? "grok" : "claude");
+const PROVIDER = process.env.NARRATIVE_PROVIDER || (isDeployed ? "groq" : "claude");
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const CLAUDE_MODEL = process.env.CLAUDE_NARRATIVE_MODEL || "claude-sonnet-5";
 
-const XAI_API_URL = "https://api.x.ai/v1/chat/completions";
-const XAI_MODEL = process.env.XAI_MODEL || "grok-4";
+const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
 
 // Cookie used to cap the public demo to one AI summary per visitor.
 // Deliberately simple (no database) — clearing cookies or using a private
@@ -101,23 +104,23 @@ async function callClaude(userContent: string) {
   return { ...parseNarrativeText(rawText), model: CLAUDE_MODEL };
 }
 
-async function callGrok(userContent: string) {
-  const apiKey = process.env.XAI_API_KEY;
+async function callGroq(userContent: string) {
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     throw new NarrativeError(
       500,
-      "XAI_API_KEY is not set on the server. Add it in your Vercel project's environment variables to enable AI narrative generation."
+      "GROQ_API_KEY is not set on the server. Add it in your Vercel project's environment variables to enable AI narrative generation."
     );
   }
 
-  const response = await fetch(XAI_API_URL, {
+  const response = await fetch(GROQ_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: XAI_MODEL,
+      model: GROQ_MODEL,
       max_tokens: 1000,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
@@ -128,12 +131,12 @@ async function callGrok(userContent: string) {
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new NarrativeError(502, `Grok API error (${response.status}): ${errText}`);
+    throw new NarrativeError(502, `Groq API error (${response.status}): ${errText}`);
   }
 
   const data = await response.json();
   const rawText: string = data.choices?.[0]?.message?.content ?? "{}";
-  return { ...parseNarrativeText(rawText), model: XAI_MODEL };
+  return { ...parseNarrativeText(rawText), model: GROQ_MODEL };
 }
 
 class NarrativeError extends Error {
@@ -145,7 +148,7 @@ class NarrativeError extends Error {
 }
 
 export async function POST(req: NextRequest) {
-  if (PROVIDER === "grok" && req.cookies.get(DEMO_LIMIT_COOKIE)) {
+  if (PROVIDER === "groq" && req.cookies.get(DEMO_LIMIT_COOKIE)) {
     return NextResponse.json(
       {
         error:
@@ -166,7 +169,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const { summary, recommendations, model } =
-      PROVIDER === "grok" ? await callGrok(userContent) : await callClaude(userContent);
+      PROVIDER === "groq" ? await callGroq(userContent) : await callClaude(userContent);
 
     const res = NextResponse.json({
       summary,
@@ -175,7 +178,7 @@ export async function POST(req: NextRequest) {
       model,
     });
 
-    if (PROVIDER === "grok") {
+    if (PROVIDER === "groq") {
       res.cookies.set(DEMO_LIMIT_COOKIE, "1", {
         httpOnly: true,
         secure: true,

@@ -60,20 +60,22 @@ Mono (data labels). Keep all new UI consistent with this system
 manual toggle:
 - Local (npm run dev): calls Claude, using ANTHROPIC_API_KEY from 
   .env.local. Never set this key in Vercel.
-- Deployed (Vercel sets VERCEL=1 automatically): calls Grok (xAI) 
-  instead, using XAI_API_KEY. This keeps the Claude key completely 
-  off the public deployment.
-- The deployed/Grok path is capped at one AI summary per visitor 
+- Deployed (Vercel sets VERCEL=1 automatically): calls Groq 
+  instead, using GROQ_API_KEY. This keeps the Claude key completely 
+  off the public deployment. Groq (console.groq.com, fast open-model 
+  inference) is a different company from xAI's Grok (console.x.ai) 
+  — don't confuse the two when rotating keys.
+- The deployed/Groq path is capped at one AI summary per visitor 
   via a simple cookie (mp_demo_used) so the public demo can't run 
   up API costs. Clearing cookies/incognito resets it — an accepted 
   tradeoff for a portfolio demo, not meant to be airtight. Rest of 
   the app (dashboard, charts, exports) is never limited.
-- NARRATIVE_PROVIDER env var can force "claude" or "grok" if ever 
+- NARRATIVE_PROVIDER env var can force "claude" or "groq" if ever 
   needed; normally leave unset.
 
 ## Deployment
 Hosted on Vercel, connected to my GitHub repo. Pushing to main 
-branch auto-deploys. XAI_API_KEY is set in Vercel's environment 
+branch auto-deploys. GROQ_API_KEY is set in Vercel's environment 
 variables. ANTHROPIC_API_KEY only ever lives in local .env.local 
 — it must never be added to Vercel or committed.
 
