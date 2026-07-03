@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+:root {
+  /* Instrument-panel palette */
+  --ink: #0b111e;
+  --panel: #141c2e;
+  --panel-raised: #1a2438;
+  --hairline: #263252;
+  --text-primary: #ecEff6;
+  --text-muted: #8992ac;
+
+  --signal: #e8a33d;      /* signature amber — "the pulse" */
+  --signal-dim: #6b5327;
+  --positive: #34c29a;
+  --negative: #e5636b;
+  --interactive: #4c8bf5;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-panel: var(--panel);
+  --color-panel-raised: var(--panel-raised);
+  --color-hairline: var(--hairline);
+  --color-text-primary: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-signal: var(--signal);
+  --color-signal-dim: var(--signal-dim);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-interactive: var(--interactive);
+
+  --font-display: var(--font-space-grotesk);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-plex-mono);
+}
+
+* {
+  border-color: var(--hairline);
+}
+
+body {
+  background: var(--ink);
+  color: var(--text-primary);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  background-image:
+    radial-gradient(circle at 15% 0%, rgba(232, 163, 61, 0.06), transparent 45%),
+    radial-gradient(circle at 85% 20%, rgba(76, 139, 245, 0.05), transparent 40%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: var(--signal);
+  color: var(--ink);
+}
+
+/* thin scrollbars to fit the instrument-panel feel */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--hairline); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+@keyframes pulse-sweep {
+  0% { opacity: 0.35; }
+  50% { opacity: 1; }
+  100% { opacity: 0.35; }
+}
+.animate-pulse-sweep {
+  animation: pulse-sweep 1.6s ease-in-out infinite;
+}
+
+.mono-label {
+  font-family: var(--font-mono), monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
