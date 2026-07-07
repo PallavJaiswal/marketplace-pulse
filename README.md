@@ -2,6 +2,8 @@
 
 **Sales & Revenue Intelligence + Auto-Reporting Engine.**
 
+🔗 **[Live Demo](https://marketplace-pulse-theta.vercel.app/)** · **[Source on GitHub](https://github.com/PallavJaiswal/marketplace-pulse)**
+
 Upload a raw sales/order export and Marketplace Pulse automatically cleans it, detects
 anomalies, ranks your top and declining SKUs, forecasts next period's revenue, writes an
 AI executive summary, and generates board-ready PDF and Excel reports — the full pipeline,
@@ -10,6 +12,29 @@ not just a dashboard.
 ```
 Upload File → Clean Data → Detect Anomalies → Rank SKUs → Forecast → AI Narrative → Dashboard → Export
 ```
+
+> **Latest update (Jul 2026):** Fixed the deployed AI narrative provider to correctly call
+> **Groq** (it was pointed at xAI's Grok by mistake — different companies, easily confused
+> names) and documented the dual-provider setup end to end: Claude for local dev, Groq for
+> the public Vercel deployment, with a one-summary-per-visitor demo cap.
+
+## Screenshots
+
+**Upload & auto column-mapping**
+![Upload screen](public/screenshots/upload.png)
+
+**Live pipeline animation** (clean → detect → rank → forecast → report)
+![Processing pipeline](public/screenshots/processing.png)
+
+**Revenue Intelligence Dashboard** — KPIs + AI executive summary
+![Dashboard](public/screenshots/dashboard.png)
+
+<details>
+<summary>Full dashboard (charts, SKU table, anomaly log)</summary>
+
+![Full dashboard](public/screenshots/dashboard-full.png)
+
+</details>
 
 ## Features
 
